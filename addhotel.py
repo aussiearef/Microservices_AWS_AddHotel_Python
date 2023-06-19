@@ -62,8 +62,6 @@ def lambda_handler(event, context):
         body = body.encode('utf-8')
      
     boundary = extract_boundary(request_headers)
-    
- 
     fields, files = parse_form(request_headers, io.BytesIO(body), boundary)
 
 
@@ -76,7 +74,6 @@ def lambda_handler(event, context):
 
     file = files.get('photo')
     file_name = file.file_name.decode()
-
     file_content=file.file_object.read()
     file.file_object.seek(0)
     
@@ -108,33 +105,37 @@ def lambda_handler(event, context):
     table = dynamoDb.Table('Hotels')
 
     logger.info(bucket_name)
-    #try:
-    s3_client.put_object(
-        Bucket=bucket_name,
-        Key=file_name,
-        Body=file.file_object.read()
-    )
-
-    hotel = {
-        "userId": user_id,
-        "Id": str(uuid.uuid4()),
-        "Name": hotel_name,
-        "CityName": hotel_city,
-        "Price": int(hotel_price),
-        "Rating": int(hotel_rating),
-        "FileName": file_name
-    }
-
-    table.put_item(Item=hotel)
-
-    #except Exception as e:
-    #    return {
-    #        "statusCode": 500,
-    #        'headers': response_headers,
-    #        "body": json.dumps({
-    #            "Error": traceback.format_exc()
-    #        })
-    #    }
+    try:
+        
+        # Upload the image to S3
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=file_name,
+            Body=file.file_object.read()
+        )
+    
+        hotel = {
+            "userId": user_id,
+            "Id": str(uuid.uuid4()),
+            "Name": hotel_name,
+            "CityName": hotel_city,
+            "Price": int(hotel_price),
+            "Rating": int(hotel_rating),
+            "FileName": file_name
+        }
+    
+    
+        # Store the hotel record in DynamoDb
+        table.put_item(Item=hotel)
+        
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            'headers': response_headers,
+            "body": json.dumps({
+                "Error": traceback.format_exc()
+            })
+        }
     
     return {
         'statusCode': 200,
@@ -159,5 +160,4 @@ def extract_boundary(headers):
         return boundary
 
     return None
-
 
