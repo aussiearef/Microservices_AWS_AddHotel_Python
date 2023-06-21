@@ -128,6 +128,13 @@ def lambda_handler(event, context):
         # Store the hotel record in DynamoDb
         table.put_item(Item=hotel)
         
+        sns_topic_arn = os.getenv("hotelCreationTopicArn")
+        sns_client = boto3.client('sns')
+        sns_client.publish(
+            TopicArn=sns_topic_arn,
+            Message= json.dumps(hotel)
+        )
+        
     except Exception as e:
         return {
             "statusCode": 500,
@@ -160,4 +167,3 @@ def extract_boundary(headers):
         return boundary
 
     return None
-
