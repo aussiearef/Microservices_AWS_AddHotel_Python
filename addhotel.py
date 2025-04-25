@@ -7,6 +7,8 @@ import boto3
 import base64
 import logging
 import multipart as python_multipart
+from botocore.exceptions import ClientError
+import traceback
 
 
 logger = logging.getLogger()
@@ -130,11 +132,15 @@ def lambda_handler(event, context):
         
         sns_topic_arn = os.getenv("hotelCreationTopicArn")
         sns_client = boto3.client('sns')
-        sns_client.publish(
-            TopicArn=sns_topic_arn,
-            Message= json.dumps(hotel)
-        )
+
         
+        if sns_topic_arn:
+            sns_client.get_topic_attributes(TopicArn=sns_topic_arn)
+            sns_client.publish(
+                TopicArn=sns_topic_arn,
+                Message=json.dumps(hotel)
+            )
+ 
     except Exception as e:
         return {
             "statusCode": 500,
